@@ -1,5 +1,6 @@
 module PhotoGroove exposing (main)
 
+import Array exposing (Array)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -10,10 +11,21 @@ urlPrefix =
     "http://elm-in-action.com/"
 
 
+type alias Msg =
+    { description : String, data : String }
+
+
+view : Model -> Html Msg
 view model =
     div [ class "content" ]
         [ h1 [] [ text "Photo Groove" ]
-        , div [ id "thumbnails" ]
+        , button
+            [ onClick { description = "ClickedSurpriseMe", data = "" } ]
+            [ text "Surprise Me!" ]
+        , h3 [] [ text "Thumbnail Size:" ]
+        , div [ id "choose-size" ]
+            (List.map viewSizeChooser [ Small, Medium, Large ])
+        , div [ id "thumbnails", class (sizeToClass model.chosenSize) ]
             (List.map
                 (viewThumbnail model.selectedUrl)
                 model.photos
@@ -26,6 +38,7 @@ view model =
         ]
 
 
+viewThumbnail : String -> Photo -> Html Msg
 viewThumbnail selectedUrl thumb =
     img
         [ src (urlPrefix ++ thumb.url)
@@ -35,6 +48,58 @@ viewThumbnail selectedUrl thumb =
         []
 
 
+viewSizeChooser : ThumbnailSize -> Html Msg
+viewSizeChooser size =
+    label []
+        [ input [ type_ "radio", name "size" ] []
+        , text (sizeToString size)
+        ]
+
+
+sizeToString : ThumbnailSize -> String
+sizeToString size =
+    case size of
+        Small ->
+            "small"
+
+        Medium ->
+            "med"
+
+        Large ->
+            "large"
+
+
+sizeToClass : ThumbnailSize -> String
+sizeToClass size =
+    case size of
+        Small ->
+            "small"
+
+        Medium ->
+            "med"
+
+        Large ->
+            "large"
+
+
+type ThumbnailSize
+    = Small
+    | Medium
+    | Large
+
+
+type alias Photo =
+    { url : String }
+
+
+type alias Model =
+    { photos : List Photo
+    , selectedUrl : String
+    , chosenSize : ThumbnailSize
+    }
+
+
+initialModel : Model
 initialModel =
     { photos =
         [ { url = "1.jpeg" }
@@ -42,15 +107,26 @@ initialModel =
         , { url = "3.jpeg" }
         ]
     , selectedUrl = "1.jpeg"
+    , chosenSize = Medium
     }
 
 
-update msg model =
-    if msg.description == "ClickedPhoto" then
-        { model | selectedUrl = msg.data }
+photoArray : Array Photo
+photoArray =
+    Array.fromList initialModel.photos
 
-    else
-        model
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg.description of
+        "ClickedPhoto" ->
+            { model | selectedUrl = msg.data }
+
+        "ClickedSurpriseMe" ->
+            { model | selectedUrl = "2.jpeg" }
+
+        _ ->
+            model
 
 
 main =
