@@ -26,7 +26,10 @@ view model =
             [ text "Surprise Me!" ]
         , h3 [] [ text "Thumbnail Size:" ]
         , div [ id "choose-size" ]
-            (List.map viewSizeChooser [ Small, Medium, Large ])
+            (List.map
+                (viewSizeChooser model.chosenSize)
+                [ Small, Medium, Large ]
+            )
         , div [ id "thumbnails", class (sizeToClass model.chosenSize) ]
             (List.map
                 (viewThumbnail model.selectedUrl)
@@ -50,10 +53,10 @@ viewThumbnail selectedUrl thumb =
         []
 
 
-viewSizeChooser : ThumbnailSize -> Html Msg
-viewSizeChooser size =
+viewSizeChooser : ThumbnailSize -> ThumbnailSize -> Html Msg
+viewSizeChooser chosenSize size =
     label []
-        [ input [ type_ "radio", name "size", onClick (ClickedSize size) ] []
+        [ input [ type_ "radio", name "size", checked (chosenSize == size), onClick (ClickedSize size) ] []
         , text (sizeToString size)
         ]
 
