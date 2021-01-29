@@ -66,7 +66,7 @@ viewRelatedPhoto : String -> Html Msg
 viewRelatedPhoto url =
     img
         [ class "related-photo"
-        , onClick (ClickedPhoto url)
+        , onClick (ClickedRelatedPhoto url)
         , src (urlPrefix ++ "photos/" ++ url ++ "/thumb")
         ]
         []
@@ -232,6 +232,7 @@ modelDecoder =
 
 type Msg
     = ClickedPhoto String
+    | ClickedRelatedPhoto String
     | GotInitialModel (Result Http.Error Model)
     | ClickedFolder FolderPath
 
@@ -244,6 +245,15 @@ update msg model =
 
         ClickedPhoto url ->
             ( { model | selectedPhotoUrl = Just url }, Cmd.none )
+
+        ClickedRelatedPhoto url ->
+            let
+                root =
+                    findUrlPath url model.root
+                        |> Maybe.map (\path -> expandPath path model.root)
+                        |> Maybe.withDefault model.root
+            in
+            ( { model | selectedPhotoUrl = Just url, root = root }, Cmd.none )
 
         GotInitialModel (Ok newModel) ->
             ( newModel, Cmd.none )
@@ -268,10 +278,41 @@ type FolderPath
 
 
 toggleExpanded : FolderPath -> Folder -> Folder
-toggleExpanded path (Folder folder) =
+toggleExpanded path folder =
+    let
+        toggleEnd path_ expanded =
+            case path_ of
+                End ->
+                    not expanded
+
+                Subfolder _ _ ->
+                    expanded
+    in
+    mapExpanded toggleEnd path folder
+
+
+findUrlPath : String -> Folder -> Maybe FolderPath
+findUrlPath url (Folder folder) =
+    if List.member url folder.photoUrls then
+        Just End
+
+    else
+        folder.subfolders
+            |> List.indexedMap (\i folder_ -> ( i, findUrlPath url folder_ ))
+            |> List.filterMap (\( i, maybePath ) -> Maybe.map (Subfolder i) maybePath)
+            |> List.head
+
+
+expandPath : FolderPath -> Folder -> Folder
+expandPath path folder =
+    mapExpanded (\_ _ -> True) path folder
+
+
+mapExpanded : (FolderPath -> Bool -> Bool) -> FolderPath -> Folder -> Folder
+mapExpanded f path (Folder folder) =
     case path of
         End ->
-            Folder { folder | expanded = not folder.expanded }
+            Folder { folder | expanded = f path folder.expanded }
 
         Subfolder targetIndex remainingPath ->
             let
@@ -282,9 +323,9 @@ toggleExpanded path (Folder folder) =
                 transform : Int -> Folder -> Folder
                 transform currentIndex currentSubfolder =
                     if currentIndex == targetIndex then
-                        toggleExpanded remainingPath currentSubfolder
+                        mapExpanded f remainingPath currentSubfolder
 
                     else
                         currentSubfolder
             in
-            Folder { folder | subfolders = subfolders }
+            Folder { folder | subfolders = subfolders, expanded = f path folder.expanded }

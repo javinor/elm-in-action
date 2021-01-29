@@ -6218,29 +6218,144 @@ var $author$project$PhotoFolders$init = function (_v0) {
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$Basics$not = _Basics_not;
-var $author$project$PhotoFolders$toggleExpanded = F2(
-	function (path, _v0) {
+var $author$project$PhotoFolders$mapExpanded = F3(
+	function (f, path, _v0) {
 		var folder = _v0.a;
 		if (path.$ === 'End') {
 			return $author$project$PhotoFolders$Folder(
 				_Utils_update(
 					folder,
-					{expanded: !folder.expanded}));
+					{
+						expanded: A2(f, path, folder.expanded)
+					}));
 		} else {
 			var targetIndex = path.a;
 			var remainingPath = path.b;
 			var transform = F2(
 				function (currentIndex, currentSubfolder) {
-					return _Utils_eq(currentIndex, targetIndex) ? A2($author$project$PhotoFolders$toggleExpanded, remainingPath, currentSubfolder) : currentSubfolder;
+					return _Utils_eq(currentIndex, targetIndex) ? A3($author$project$PhotoFolders$mapExpanded, f, remainingPath, currentSubfolder) : currentSubfolder;
 				});
 			var subfolders = A2($elm$core$List$indexedMap, transform, folder.subfolders);
 			return $author$project$PhotoFolders$Folder(
 				_Utils_update(
 					folder,
-					{subfolders: subfolders}));
+					{
+						expanded: A2(f, path, folder.expanded),
+						subfolders: subfolders
+					}));
+		}
+	});
+var $author$project$PhotoFolders$expandPath = F2(
+	function (path, folder) {
+		return A3(
+			$author$project$PhotoFolders$mapExpanded,
+			F2(
+				function (_v0, _v1) {
+					return true;
+				}),
+			path,
+			folder);
+	});
+var $author$project$PhotoFolders$End = {$: 'End'};
+var $author$project$PhotoFolders$Subfolder = F2(
+	function (a, b) {
+		return {$: 'Subfolder', a: a, b: b};
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$PhotoFolders$findUrlPath = F2(
+	function (url, _v0) {
+		var folder = _v0.a;
+		return A2($elm$core$List$member, url, folder.photoUrls) ? $elm$core$Maybe$Just($author$project$PhotoFolders$End) : $elm$core$List$head(
+			A2(
+				$elm$core$List$filterMap,
+				function (_v1) {
+					var i = _v1.a;
+					var maybePath = _v1.b;
+					return A2(
+						$elm$core$Maybe$map,
+						$author$project$PhotoFolders$Subfolder(i),
+						maybePath);
+				},
+				A2(
+					$elm$core$List$indexedMap,
+					F2(
+						function (i, folder_) {
+							return _Utils_Tuple2(
+								i,
+								A2($author$project$PhotoFolders$findUrlPath, url, folder_));
+						}),
+					folder.subfolders)));
+	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$PhotoFolders$toggleExpanded = F2(
+	function (path, folder) {
+		var toggleEnd = F2(
+			function (path_, expanded) {
+				if (path_.$ === 'End') {
+					return !expanded;
+				} else {
+					return expanded;
+				}
+			});
+		return A3($author$project$PhotoFolders$mapExpanded, toggleEnd, path, folder);
+	});
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
 		}
 	});
 var $author$project$PhotoFolders$update = F2(
@@ -6264,6 +6379,25 @@ var $author$project$PhotoFolders$update = F2(
 							selectedPhotoUrl: $elm$core$Maybe$Just(url)
 						}),
 					$elm$core$Platform$Cmd$none);
+			case 'ClickedRelatedPhoto':
+				var url = msg.a;
+				var root = A2(
+					$elm$core$Maybe$withDefault,
+					model.root,
+					A2(
+						$elm$core$Maybe$map,
+						function (path) {
+							return A2($author$project$PhotoFolders$expandPath, path, model.root);
+						},
+						A2($author$project$PhotoFolders$findUrlPath, url, model.root)));
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							root: root,
+							selectedPhotoUrl: $elm$core$Maybe$Just(url)
+						}),
+					$elm$core$Platform$Cmd$none);
 			default:
 				if (msg.a.$ === 'Ok') {
 					var newModel = msg.a.a;
@@ -6273,7 +6407,6 @@ var $author$project$PhotoFolders$update = F2(
 				}
 		}
 	});
-var $author$project$PhotoFolders$End = {$: 'End'};
 var $elm$core$Maybe$andThen = F2(
 	function (callback, maybeValue) {
 		if (maybeValue.$ === 'Just') {
@@ -6306,10 +6439,6 @@ var $elm$core$List$append = F2(
 		} else {
 			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
 		}
-	});
-var $author$project$PhotoFolders$Subfolder = F2(
-	function (a, b) {
-		return {$: 'Subfolder', a: a, b: b};
 	});
 var $author$project$PhotoFolders$appendIndex = F2(
 	function (index, path) {
@@ -6424,6 +6553,9 @@ var $elm$html$Html$Attributes$src = function (url) {
 		_VirtualDom_noJavaScriptOrHtmlUri(url));
 };
 var $author$project$PhotoFolders$urlPrefix = 'http://elm-in-action.com/';
+var $author$project$PhotoFolders$ClickedRelatedPhoto = function (a) {
+	return {$: 'ClickedRelatedPhoto', a: a};
+};
 var $author$project$PhotoFolders$viewRelatedPhoto = function (url) {
 	return A2(
 		$elm$html$Html$img,
@@ -6431,7 +6563,7 @@ var $author$project$PhotoFolders$viewRelatedPhoto = function (url) {
 			[
 				$elm$html$Html$Attributes$class('related-photo'),
 				$elm$html$Html$Events$onClick(
-				$author$project$PhotoFolders$ClickedPhoto(url)),
+				$author$project$PhotoFolders$ClickedRelatedPhoto(url)),
 				$elm$html$Html$Attributes$src($author$project$PhotoFolders$urlPrefix + ('photos/' + (url + '/thumb')))
 			]),
 		_List_Nil);
