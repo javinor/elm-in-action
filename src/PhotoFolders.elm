@@ -1,9 +1,8 @@
-module PhotoFolders exposing (main)
+module PhotoFolders exposing (Model, Msg, init, update, view)
 
-import Browser
 import Dict exposing (Dict)
 import Html exposing (..)
-import Html.Attributes exposing (class, src)
+import Html.Attributes exposing (class, href, src)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode as Decode exposing (Decoder, int, list, string)
@@ -36,8 +35,7 @@ view model =
     in
     div [ class "content" ]
         [ div [ class "folders" ]
-            [ h1 [] [ text "Folders" ]
-            , viewFolder End model.root
+            [ viewFolder End model.root
             ]
         , div [ class "selected-photo" ] [ selectedPhoto ]
         ]
@@ -45,7 +43,7 @@ view model =
 
 viewPhoto : String -> Html Msg
 viewPhoto url =
-    div [ class "photo", onClick (ClickedPhoto url) ]
+    a [ href ("/photos/" ++ url), class "photo", onClick (ClickedPhoto url) ]
         [ text url ]
 
 
@@ -143,9 +141,9 @@ initialModel =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( initialModel
+init : Maybe String -> ( Model, Cmd Msg )
+init selectedFilename =
+    ( { initialModel | selectedPhotoUrl = selectedFilename }
     , Http.get
         { url = "http://elm-in-action.com/folders/list"
         , expect = Http.expectJson GotInitialModel modelDecoder
@@ -189,20 +187,12 @@ update msg model =
             ( { model | selectedPhotoUrl = Just url, root = root }, Cmd.none )
 
         GotInitialModel (Ok newModel) ->
-            ( newModel, Cmd.none )
+            ( { newModel | selectedPhotoUrl = model.selectedPhotoUrl }
+            , Cmd.none
+            )
 
         GotInitialModel (Err _) ->
             ( model, Cmd.none )
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = \_ -> Sub.none
-        }
 
 
 type FolderPath
