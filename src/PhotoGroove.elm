@@ -97,7 +97,7 @@ viewFilter : (Int -> Msg) -> String -> Int -> Html Msg
 viewFilter toMsg name magnitude =
     div [ class "filter-slider" ]
         [ label [] [ text name ]
-        , rangeSlider
+        , node "range-slider"
             [ Attr.max "11"
             , Attr.property "val" (Encode.int magnitude)
             , onSlide toMsg
@@ -228,7 +228,7 @@ update msg model =
                 Loading ->
                     ( model, Cmd.none )
 
-                Errored errorMessage ->
+                Errored _ ->
                     ( model, Cmd.none )
 
         GotPhotos (Ok ((firstPhoto :: _) as photos)) ->
@@ -237,7 +237,7 @@ update msg model =
         GotPhotos (Ok []) ->
             ( { model | status = Errored "0 photos found" }, Cmd.none )
 
-        GotPhotos (Err httpError) ->
+        GotPhotos (Err _) ->
             ( { model | status = Errored "Server error! " }, Cmd.none )
 
         SlidHue hue ->
@@ -253,7 +253,7 @@ update msg model =
 applyFilters : Model -> ( Model, Cmd Msg )
 applyFilters model =
     case model.status of
-        Loaded photos selectedUrl ->
+        Loaded _ selectedUrl ->
             let
                 filters =
                     [ { name = "Hue", amount = toFloat model.hue / 11 }
@@ -269,7 +269,7 @@ applyFilters model =
         Loading ->
             ( model, Cmd.none )
 
-        Errored errorMessage ->
+        Errored _ ->
             ( model, Cmd.none )
 
 
@@ -282,8 +282,7 @@ selectUrl url status =
         Loading ->
             status
 
-        -- thought
-        Errored errorMessage ->
+        Errored _ ->
             status
 
 
@@ -315,9 +314,5 @@ init flags =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     activityChanges GotActivity
-
-
-rangeSlider attributes children =
-    node "range-slider" attributes children

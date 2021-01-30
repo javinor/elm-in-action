@@ -1,10 +1,9 @@
 module PhotoGrooveTests exposing (..)
 
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
-import Html.Attributes as Attr exposing (src)
-import Test.Html.Event as Event
-import Json.Decode as Decode exposing (decodeValue)
+import Fuzz exposing (Fuzzer, int, string)
+import Html.Attributes exposing (src)
+import Json.Decode exposing (decodeValue)
 import Json.Encode as Encode
 import PhotoGroove
     exposing
@@ -18,8 +17,9 @@ import PhotoGroove
         , view
         )
 import Test exposing (..)
+import Test.Html.Event as Event
 import Test.Html.Query as Query
-import Test.Html.Selector exposing (attribute, tag, text)
+import Test.Html.Selector exposing (attribute, tag)
 
 
 decoderTest : Test
@@ -69,7 +69,7 @@ noPhotosNoThumbnails =
 thumbnailRendered : String -> Query.Single msg -> Expectation
 thumbnailRendered url query =
     query
-        |> Query.findAll [ tag "img", attribute (Attr.src (urlPrefix ++ url)) ]
+        |> Query.findAll [ tag "img", attribute (src (urlPrefix ++ url)) ]
         |> Query.count (Expect.atLeast 1)
 
 
@@ -128,6 +128,6 @@ clickThumbnail =
             { initialModel | status = Loaded photos "" }
                 |> view
                 |> Query.fromHtml
-                |> Query.find [ tag "img", attribute (Attr.src srcToClick) ]
+                |> Query.find [ tag "img", attribute (src srcToClick) ]
                 |> Event.simulate Event.click
                 |> Event.expect (ClickedPhoto url)
